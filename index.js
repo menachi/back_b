@@ -1,15 +1,17 @@
 const express = require("express");
 const app = express();
-
 const port = process.env.PORT;
 
-app.get("/", (req, res) => {
-  res.send("Hello World!......");
-});
+const mongoose = require("mongoose");
+mongoose.connect(process.env.DATABASE_URL, { useNewUrlParser: true });
+const db = mongoose.connection;
+db.on("error", (error) => console.error(error));
+db.once("open", () => console.log("Connected to Database"));
 
-app.get("/movie", (req, res) => {
-  res.send("movie get...123...");
-});
+app.use(express.json());
+
+const moviesRoute = require("./routes/moviesRoute");
+app.use("/movie", moviesRoute);
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`);

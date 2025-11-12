@@ -1,9 +1,33 @@
 ###
 
-GET http://localhost:3000/
-
+GET http://localhost:3000/movie
 
 ###
 
-GET http://localhost:3000/movie
+GET http://localhost:3000/movie?year=2000
 
+###
+
+GET http://localhost:3000/movie/691490ba67c33053554ce8f5
+
+###
+POST http://localhost:3000/movie
+Content-Type: application/json  
+
+{
+  "title": "Inception",
+  "year": 2010
+}
+
+###
+DELETE http://localhost:3000/movie/691490ba67c33053554ce8f5
+
+
+###
+PUT http://localhost:3000/movie/69149147288d1775ac1bd336
+Content-Type: application/json  
+
+{
+  "title": "Inception",
+  "year": 2013
+}
