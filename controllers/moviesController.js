@@ -20,7 +20,11 @@ const getMovieById = async (req, res) => {
   const id = req.params.id;
   try {
     const movie = await movieModel.findById(id);
-    res.json(movie);
+    if (!movie) {
+      return res.status(404).send("Movie not found");
+    } else {
+      res.json(movie);
+    }
   } catch (err) {
     console.error(err);
     res.status(500).send("Error retrieving movie by ID");
