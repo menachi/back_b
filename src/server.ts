@@ -1,4 +1,4 @@
-const initApp = require("./index");
+import initApp from "./index";
 
 const port = process.env.PORT;
 

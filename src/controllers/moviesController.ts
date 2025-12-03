@@ -1,6 +1,7 @@
-const movieModel = require("../model/moviesModel");
+import movieModel from "../model/moviesModel";
+import { Request, Response } from "express";
 
-const getAllMovies = async (req, res) => {
+const getAllMovies = async (req: Request, res: Response) => {
   try {
     const year = req.query.year;
     if (year) {
@@ -16,7 +17,7 @@ const getAllMovies = async (req, res) => {
   }
 };
 
-const getMovieById = async (req, res) => {
+const getMovieById = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {
     const movie = await movieModel.findById(id);
@@ -31,7 +32,7 @@ const getMovieById = async (req, res) => {
   }
 };
 
-const createMovie = async (req, res) => {
+const createMovie = async (req: Request, res: Response) => {
   const movieData = req.body;
   console.log(movieData);
   try {
@@ -43,7 +44,7 @@ const createMovie = async (req, res) => {
   }
 };
 
-const deleteMovie = async (req, res) => {
+const deleteMovie = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {
     const deletedMovie = await movieModel.findByIdAndDelete(id);
@@ -54,7 +55,7 @@ const deleteMovie = async (req, res) => {
   }
 };
 
-const updateMovie = async (req, res) => {
+const updateMovie = async (req: Request, res: Response) => {
   const id = req.params.id;
   const updatedData = req.body;
   try {
@@ -68,7 +69,7 @@ const updateMovie = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
   getAllMovies,
   getMovieById,
   createMovie,

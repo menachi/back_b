@@ -1,8 +1,9 @@
-const request = require("supertest");
-const initApp = require("../index");
-const moviesModel = require("../model/moviesModel");
+import request from "supertest";
+import initApp from "../index";
+import moviesModel from "../model/moviesModel";
+import { Express } from "express";
 
-let app;
+let app: Express;
 
 beforeAll(async () => {
   app = await initApp();
@@ -13,7 +14,9 @@ afterAll((done) => {
   done();
 });
 
-const moviesList = [
+type MovieData = { title: string, year: number, _id?: string };
+
+const moviesList: MovieData[] = [
   { title: "Inception", year: 2010 },
   { title: "The Matrix", year: 1999 },
   { title: "Interstellar", year: 2014 },
