@@ -93,12 +93,9 @@ const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* (
             console.log(" **** Possible token theft for user:", user._id);
             return sendError(401, "Invalid refresh token", res);
         }
-        // Remove the old refresh token BEFORE generating new ones
-        // This prevents race conditions where the same token is used twice
-        user.refreshTokens = user.refreshTokens.filter(token => token !== refreshToken);
-        yield user.save();
         const tokens = generateToken(decoded._id);
-        //add the new refresh token
+        //remove old token from user refreshTokens and add the new one
+        user.refreshTokens = user.refreshTokens.filter(token => token !== refreshToken);
         user.refreshTokens.push(tokens.refreshToken);
         yield user.save();
         res.status(200).json(tokens);

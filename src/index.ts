@@ -3,15 +3,31 @@ import mongoose from "mongoose";
 import moviesRoute from "./routes/moviesRoute";
 import commentsRoute from "./routes/commentsRoute";
 import authRoute from "./routes/authRoute";
+import { swaggerUi, swaggerSpec } from "./swagger";
 
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.dev" });
 
 const app = express();
 app.use(express.json());
+
+// Swagger UI setup
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Movies & Comments API Documentation'
+}));
+
+// API routes
 app.use("/movie", moviesRoute);
 app.use("/comment", commentsRoute);
 app.use("/auth", authRoute);
+
+// Swagger JSON endpoint
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 const initApp = () => {
   const pr = new Promise<Express>((resolve, reject) => {
