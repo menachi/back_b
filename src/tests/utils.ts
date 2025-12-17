@@ -5,14 +5,16 @@ export type UserData = {
     email: string,
     password: string,
     _id: string,
-    token: string
+    token: string,
+    refreshToken: string
 };
 
 export const userData = {
     email: "test@test.com",
     password: "testpass",
     _id: "",
-    token: ""
+    token: "",
+    refreshToken: ""
 };
 
 export const getLogedInUser = async (app: Express): Promise<UserData> => {
@@ -28,6 +30,7 @@ export const getLogedInUser = async (app: Express): Promise<UserData> => {
     const logedUser = {
         _id: response.body._id,
         token: response.body.token,
+        refreshToken: response.body.refreshToken,
         email: email,
         password: password
     };

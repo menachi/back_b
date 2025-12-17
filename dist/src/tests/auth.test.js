@@ -37,6 +37,9 @@ describe("Test Auth Suite", () => {
         expect(response.status).toBe(201);
         expect(response.body).toHaveProperty("token");
         utils_1.userData.token = response.body.token;
+        //check refresh token
+        expect(response.body).toHaveProperty("refreshToken");
+        utils_1.userData.refreshToken = response.body.refreshToken;
         utils_1.userData._id = response.body._id;
     }));
     test("create a movie with token succeeds", () => __awaiter(void 0, void 0, void 0, function* () {
@@ -62,6 +65,9 @@ describe("Test Auth Suite", () => {
         const response = yield (0, supertest_1.default)(app).post("/auth/login").send({ "email": email, "password": password });
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("token");
+        expect(response.body).toHaveProperty("refreshToken");
+        utils_1.userData.token = response.body.token;
+        utils_1.userData.refreshToken = response.body.refreshToken;
     }));
     jest.setTimeout(10000);
     test("Test using token after expiration fails", () => __awaiter(void 0, void 0, void 0, function* () {
@@ -73,6 +79,33 @@ describe("Test Auth Suite", () => {
             .set("Authorization", "Bearer " + utils_1.userData.token)
             .send(movieData);
         expect(response.status).toBe(401);
+        //refresh the token
+        const refreshResponse = yield (0, supertest_1.default)(app).post("/auth/refresh").send({ "refreshToken": utils_1.userData.refreshToken });
+        console.log("Refresh response body:", refreshResponse.body);
+        expect(refreshResponse.status).toBe(200);
+        expect(refreshResponse.body).toHaveProperty("token");
+        utils_1.userData.token = refreshResponse.body.token;
+        utils_1.userData.refreshToken = refreshResponse.body.refreshToken;
+        //try to create movie again
+        const retryResponse = yield (0, supertest_1.default)(app)
+            .post("/movie")
+            .set("Authorization", "Bearer " + utils_1.userData.token)
+            .send(movieData);
+        expect(retryResponse.status).toBe(201);
+    }));
+    //test double use of refresh token fails
+    test("Test double use of refresh token fails", () => __awaiter(void 0, void 0, void 0, function* () {
+        //use the current refresh token to get a new token
+        const refreshResponse1 = yield (0, supertest_1.default)(app).post("/auth/refresh").send({ "refreshToken": utils_1.userData.refreshToken });
+        expect(refreshResponse1.status).toBe(200);
+        expect(refreshResponse1.body).toHaveProperty("token");
+        const newRefreshToken = refreshResponse1.body.refreshToken;
+        //try to use the same refresh token again
+        const refreshResponse2 = yield (0, supertest_1.default)(app).post("/auth/refresh").send({ "refreshToken": utils_1.userData.refreshToken });
+        expect(refreshResponse2.status).toBe(401);
+        //try to use the new refresh token also fails
+        const refreshResponse3 = yield (0, supertest_1.default)(app).post("/auth/refresh").send({ "refreshToken": newRefreshToken });
+        expect(refreshResponse3.status).toBe(401);
     }));
 });
 //# sourceMappingURL=auth.test.js.map

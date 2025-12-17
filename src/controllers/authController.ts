@@ -7,7 +7,12 @@ const sendError = (code: number, message: string, res: Response) => {
     res.status(code).json({ message });
 }
 
-const generateToken = (userId: string): string => {
+type GeneratedTokens = {
+    token: string,
+    refreshToken: string
+};
+
+const generateToken = (userId: string): GeneratedTokens => {
     const secret = process.env.JWT_SECRET || "default_secret";
     //TODO: check if no secret close the server
     const expiresIn = parseInt(process.env.JWT_EXPIRES_IN || "3600");
@@ -16,7 +21,14 @@ const generateToken = (userId: string): string => {
         secret,
         { expiresIn: expiresIn }
     );
-    return token;
+
+    const refreshExpiresIn = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN || "1440");
+    const refreshToken = jwt.sign(
+        { _id: userId },
+        secret,
+        { expiresIn: refreshExpiresIn }
+    );
+    return { token, refreshToken };
 }
 
 const register = async (req: Request, res: Response) => {
@@ -29,9 +41,10 @@ const register = async (req: Request, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
         const user = await User.create({ "email": email, "password": hashedPassword });
-
-        const token = generateToken(user._id.toString());
-        res.status(201).json({ "token": token });
+        const tokens = generateToken(user._id.toString());
+        user.refreshTokens.push(tokens.refreshToken);
+        await user.save();
+        res.status(201).json(tokens);
     } catch (err) {
         return sendError(500, "Internal server error", res);
     }
@@ -53,15 +66,57 @@ const login = async (req: Request, res: Response) => {
             return sendError(401, "Invalid email or password 2", res);
         }
 
-        const token = generateToken(user._id.toString());
-        res.status(200).json({ "token": token });
+        const tokens = generateToken(user._id.toString());
+        user.refreshTokens.push(tokens.refreshToken);
+        await user.save();
+        res.status(200).json(tokens);
 
     } catch (err) {
         return sendError(500, "Internal server error", res);
     }
 }
 
+//refresh token function to be implemented
+const refreshToken = async (req: Request, res: Response) => {
+    // Refresh token logic here
+    const refreshToken = req.body.refreshToken;
+    if (!refreshToken) {
+        return sendError(400, "Refresh token is required", res);
+    }
+    const secret = process.env.JWT_SECRET || "default_secret";
+    try {
+        const decoded = jwt.verify(refreshToken, secret) as { _id: string };
+        const user = await User.findById(decoded._id);
+        if (!user) {
+            return sendError(401, "Invalid refresh token", res);
+        }
+        // Check if the refresh token exists in the user's refreshTokens array
+        if (!user.refreshTokens.includes(refreshToken)) {
+            //clear the refresh tokens array and save
+            user.refreshTokens = [];
+            await user.save();
+            console.log(" **** Possible token theft for user:", user._id);
+            return sendError(401, "Invalid refresh token", res);
+        }
+        
+        // Remove the old refresh token BEFORE generating new ones
+        // This prevents race conditions where the same token is used twice
+        user.refreshTokens = user.refreshTokens.filter(token => token !== refreshToken);
+        await user.save();
+        
+        const tokens = generateToken(decoded._id);
+        //add the new refresh token
+        user.refreshTokens.push(tokens.refreshToken);
+        await user.save();
+        res.status(200).json(tokens);
+    } catch (err) {
+        return sendError(401, "Invalid refresh token", res);
+    }
+};
+
+
 export default {
     register,
-    login
+    login,
+    refreshToken
 };

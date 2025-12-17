@@ -23,7 +23,9 @@ const generateToken = (userId) => {
     //TODO: check if no secret close the server
     const expiresIn = parseInt(process.env.JWT_EXPIRES_IN || "3600");
     const token = jsonwebtoken_1.default.sign({ _id: userId }, secret, { expiresIn: expiresIn });
-    return token;
+    const refreshExpiresIn = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN || "1440");
+    const refreshToken = jsonwebtoken_1.default.sign({ _id: userId }, secret, { expiresIn: refreshExpiresIn });
+    return { token, refreshToken };
 };
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const email = req.body.email;
@@ -35,8 +37,10 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         const salt = yield bcrypt_1.default.genSalt(10);
         const hashedPassword = yield bcrypt_1.default.hash(password, salt);
         const user = yield userModel_1.default.create({ "email": email, "password": hashedPassword });
-        const token = generateToken(user._id.toString());
-        res.status(201).json({ "token": token });
+        const tokens = generateToken(user._id.toString());
+        user.refreshTokens.push(tokens.refreshToken);
+        yield user.save();
+        res.status(201).json(tokens);
     }
     catch (err) {
         return sendError(500, "Internal server error", res);
@@ -58,15 +62,54 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         if (!isMatch) {
             return sendError(401, "Invalid email or password 2", res);
         }
-        const token = generateToken(user._id.toString());
-        res.status(200).json({ "token": token });
+        const tokens = generateToken(user._id.toString());
+        user.refreshTokens.push(tokens.refreshToken);
+        yield user.save();
+        res.status(200).json(tokens);
     }
     catch (err) {
         return sendError(500, "Internal server error", res);
     }
 });
+//refresh token function to be implemented
+const refreshToken = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    // Refresh token logic here
+    const refreshToken = req.body.refreshToken;
+    if (!refreshToken) {
+        return sendError(400, "Refresh token is required", res);
+    }
+    const secret = process.env.JWT_SECRET || "default_secret";
+    try {
+        const decoded = jsonwebtoken_1.default.verify(refreshToken, secret);
+        const user = yield userModel_1.default.findById(decoded._id);
+        if (!user) {
+            return sendError(401, "Invalid refresh token", res);
+        }
+        // Check if the refresh token exists in the user's refreshTokens array
+        if (!user.refreshTokens.includes(refreshToken)) {
+            //clear the refresh tokens array and save
+            user.refreshTokens = [];
+            yield user.save();
+            console.log(" **** Possible token theft for user:", user._id);
+            return sendError(401, "Invalid refresh token", res);
+        }
+        // Remove the old refresh token BEFORE generating new ones
+        // This prevents race conditions where the same token is used twice
+        user.refreshTokens = user.refreshTokens.filter(token => token !== refreshToken);
+        yield user.save();
+        const tokens = generateToken(decoded._id);
+        //add the new refresh token
+        user.refreshTokens.push(tokens.refreshToken);
+        yield user.save();
+        res.status(200).json(tokens);
+    }
+    catch (err) {
+        return sendError(401, "Invalid refresh token", res);
+    }
+});
 exports.default = {
     register,
-    login
+    login,
+    refreshToken
 };
 //# sourceMappingURL=authController.js.map

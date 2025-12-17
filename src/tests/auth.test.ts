@@ -30,6 +30,9 @@ describe("Test Auth Suite", () => {
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty("token");
     userData.token = response.body.token;
+    //check refresh token
+    expect(response.body).toHaveProperty("refreshToken");
+    userData.refreshToken = response.body.refreshToken;
     userData._id = response.body._id;
   });
 
@@ -60,6 +63,9 @@ describe("Test Auth Suite", () => {
     );
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty("token");
+    expect(response.body).toHaveProperty("refreshToken");
+    userData.token = response.body.token;
+    userData.refreshToken = response.body.refreshToken;
   });
 
   jest.setTimeout(10000);
@@ -73,5 +79,45 @@ describe("Test Auth Suite", () => {
       .set("Authorization", "Bearer " + userData.token)
       .send(movieData);
     expect(response.status).toBe(401);
+
+    //refresh the token
+    const refreshResponse = await request(app).post("/auth/refresh").send(
+      { "refreshToken": userData.refreshToken }
+    );
+    console.log("Refresh response body:", refreshResponse.body);
+    expect(refreshResponse.status).toBe(200);
+    expect(refreshResponse.body).toHaveProperty("token");
+    userData.token = refreshResponse.body.token;
+    userData.refreshToken = refreshResponse.body.refreshToken;
+
+    //try to create movie again
+    const retryResponse = await request(app)
+      .post("/movie")
+      .set("Authorization", "Bearer " + userData.token)
+      .send(movieData);
+    expect(retryResponse.status).toBe(201);
+  });
+
+  //test double use of refresh token fails
+  test("Test double use of refresh token fails", async () => {
+    //use the current refresh token to get a new token
+    const refreshResponse1 = await request(app).post("/auth/refresh").send(
+      { "refreshToken": userData.refreshToken }
+    );
+    expect(refreshResponse1.status).toBe(200);
+    expect(refreshResponse1.body).toHaveProperty("token");
+    const newRefreshToken = refreshResponse1.body.refreshToken;
+
+    //try to use the same refresh token again
+    const refreshResponse2 = await request(app).post("/auth/refresh").send(
+      { "refreshToken": userData.refreshToken }
+    );
+    expect(refreshResponse2.status).toBe(401);
+
+    //try to use the new refresh token also fails
+    const refreshResponse3 = await request(app).post("/auth/refresh").send(
+      { "refreshToken": newRefreshToken }
+    );
+    expect(refreshResponse3.status).toBe(401);
   });
 });

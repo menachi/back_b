@@ -18,7 +18,8 @@ exports.userData = {
     email: "test@test.com",
     password: "testpass",
     _id: "",
-    token: ""
+    token: "",
+    refreshToken: ""
 };
 const getLogedInUser = (app) => __awaiter(void 0, void 0, void 0, function* () {
     const email = exports.userData.email;
@@ -30,6 +31,7 @@ const getLogedInUser = (app) => __awaiter(void 0, void 0, void 0, function* () {
     const logedUser = {
         _id: response.body._id,
         token: response.body.token,
+        refreshToken: response.body.refreshToken,
         email: email,
         password: password
     };
