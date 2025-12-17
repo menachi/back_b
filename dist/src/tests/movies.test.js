@@ -80,6 +80,7 @@ describe("Sample Test Suite", () => {
         const response = yield (0, supertest_1.default)(app).delete("/movie/" + movieId)
             .set("Authorization", "Bearer " + loginUser.token);
         expect(response.status).toBe(200);
+        console.log(response.body);
         expect(response.body._id).toBe(movieId);
         const getResponse = yield (0, supertest_1.default)(app).get("/movie/" + movieId);
         expect(getResponse.status).toBe(404);

@@ -8,6 +8,7 @@
     "dev": "nodemon  ./src/server.ts",
     "test": "tsc && jest --runInBand --detectOpenHandles --forceExit",
     "testComment": "tsc && jest --runInBand --detectOpenHandles --forceExit ./src/tests/comments.test.ts",
+    "testMovies": "tsc && jest --runInBand --detectOpenHandles --forceExit ./src/tests/movies.test.ts",
     "testAuth": "tsc && jest --runInBand --detectOpenHandles --forceExit ./src/tests/auth.test.ts"
   },
   "author": "Menachi",

@@ -79,6 +79,7 @@ describe("Sample Test Suite", () => {
     const response = await request(app).delete("/movie/" + movieId)
       .set("Authorization", "Bearer " + loginUser.token);
     expect(response.status).toBe(200);
+    console.log(response.body);
     expect(response.body._id).toBe(movieId);
 
     const getResponse = await request(app).get("/movie/" + movieId);

@@ -55,6 +55,7 @@ class BaseController {
         try {
             const deletedData = await this.model.findByIdAndDelete(id);
             res.status(200).json(deletedData);
+            console.log("delete data -----" + deletedData);
         } catch (err) {
             console.error(err);
             res.status(500).send("Error deleting movie");

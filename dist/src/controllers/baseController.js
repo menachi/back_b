@@ -72,6 +72,7 @@ class BaseController {
             try {
                 const deletedData = yield this.model.findByIdAndDelete(id);
                 res.status(200).json(deletedData);
+                console.log("delete data -----" + deletedData);
             }
             catch (err) {
                 console.error(err);
