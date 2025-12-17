@@ -2,14 +2,16 @@ import mongoose from "mongoose";
 
 const commentsSchema = new mongoose.Schema({
   movieId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "movie",
     required: true,
   },
   userId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "user",
     required: true,
   },
-  message: {
+  content: {
     type: String,
     required: true,
   },

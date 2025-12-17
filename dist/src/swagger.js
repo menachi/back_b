@@ -202,11 +202,349 @@ const options = {
             },
         ],
     },
-    apis: [
-        './src/routes/*.ts', // Path to the API routes
-        './src/controllers/*.ts', // Path to controllers if needed
-    ],
+    apis: [], // Will be set conditionally below
 };
-const swaggerSpec = (0, swagger_jsdoc_1.default)(options);
+// Manually define paths since JSDoc parsing has issues
+const manualPaths = {
+    '/auth/register': {
+        post: {
+            tags: ['Authentication'],
+            summary: 'Register a new user',
+            description: 'Create a new user account with email and password',
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: { $ref: '#/components/schemas/RegisterRequest' }
+                    }
+                }
+            },
+            responses: {
+                201: {
+                    description: 'User registered successfully',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/AuthResponse' }
+                        }
+                    }
+                },
+                400: { description: 'Invalid input data' },
+                409: { description: 'User already exists' }
+            }
+        }
+    },
+    '/auth/login': {
+        post: {
+            tags: ['Authentication'],
+            summary: 'Login user',
+            description: 'Authenticate user and return JWT tokens',
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: { $ref: '#/components/schemas/LoginRequest' }
+                    }
+                }
+            },
+            responses: {
+                200: {
+                    description: 'Login successful',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/AuthResponse' }
+                        }
+                    }
+                },
+                401: { description: 'Invalid credentials' }
+            }
+        }
+    },
+    '/auth/refresh': {
+        post: {
+            tags: ['Authentication'],
+            summary: 'Refresh access token',
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: { $ref: '#/components/schemas/RefreshTokenRequest' }
+                    }
+                }
+            },
+            responses: {
+                200: {
+                    description: 'Token refreshed successfully',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/AuthResponse' }
+                        }
+                    }
+                },
+                401: { description: 'Invalid refresh token' }
+            }
+        }
+    },
+    '/movie': {
+        get: {
+            tags: ['Movies'],
+            summary: 'Get all movies',
+            responses: {
+                200: {
+                    description: 'List of movies',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'array',
+                                items: { $ref: '#/components/schemas/Movie' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        post: {
+            tags: ['Movies'],
+            summary: 'Create a new movie',
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            required: ['title', 'year'],
+                            properties: {
+                                title: { type: 'string' },
+                                year: { type: 'number' }
+                            }
+                        }
+                    }
+                }
+            },
+            responses: {
+                201: {
+                    description: 'Movie created successfully',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/Movie' }
+                        }
+                    }
+                },
+                401: { description: 'Unauthorized' }
+            }
+        }
+    },
+    '/movie/{id}': {
+        get: {
+            tags: ['Movies'],
+            summary: 'Get movie by ID',
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            responses: {
+                200: {
+                    description: 'Movie details',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/Movie' }
+                        }
+                    }
+                },
+                404: { description: 'Movie not found' }
+            }
+        },
+        put: {
+            tags: ['Movies'],
+            summary: 'Update a movie',
+            security: [{ bearerAuth: [] }],
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            properties: {
+                                title: { type: 'string' },
+                                year: { type: 'number' }
+                            }
+                        }
+                    }
+                }
+            },
+            responses: {
+                200: { description: 'Movie updated successfully' },
+                401: { description: 'Unauthorized' },
+                403: { description: 'Forbidden - Not the movie creator' },
+                404: { description: 'Movie not found' }
+            }
+        },
+        delete: {
+            tags: ['Movies'],
+            summary: 'Delete a movie',
+            security: [{ bearerAuth: [] }],
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            responses: {
+                200: { description: 'Movie deleted successfully' },
+                401: { description: 'Unauthorized' },
+                403: { description: 'Forbidden - Not the movie creator' },
+                404: { description: 'Movie not found' }
+            }
+        }
+    },
+    '/comment': {
+        get: {
+            tags: ['Comments'],
+            summary: 'Get all comments',
+            parameters: [{
+                    name: 'movieId',
+                    in: 'query',
+                    schema: { type: 'string' },
+                    description: 'Filter by movie ID'
+                }],
+            responses: {
+                200: {
+                    description: 'List of comments',
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'array',
+                                items: { $ref: '#/components/schemas/Comment' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        post: {
+            tags: ['Comments'],
+            summary: 'Create a new comment',
+            security: [{ bearerAuth: [] }],
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            required: ['content', 'movieId'],
+                            properties: {
+                                content: { type: 'string' },
+                                movieId: { type: 'string' }
+                            }
+                        }
+                    }
+                }
+            },
+            responses: {
+                201: {
+                    description: 'Comment created successfully',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/Comment' }
+                        }
+                    }
+                },
+                401: { description: 'Unauthorized' }
+            }
+        }
+    },
+    '/comment/{id}': {
+        get: {
+            tags: ['Comments'],
+            summary: 'Get comment by ID',
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            responses: {
+                200: {
+                    description: 'Comment details',
+                    content: {
+                        'application/json': {
+                            schema: { $ref: '#/components/schemas/Comment' }
+                        }
+                    }
+                },
+                404: { description: 'Comment not found' }
+            }
+        },
+        put: {
+            tags: ['Comments'],
+            summary: 'Update a comment',
+            security: [{ bearerAuth: [] }],
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: {
+                            type: 'object',
+                            properties: {
+                                content: { type: 'string' },
+                                movieId: { type: 'string' }
+                            }
+                        }
+                    }
+                }
+            },
+            responses: {
+                200: { description: 'Comment updated successfully' },
+                401: { description: 'Unauthorized' },
+                403: { description: 'Forbidden - Not the comment creator' },
+                404: { description: 'Comment not found' }
+            }
+        },
+        delete: {
+            tags: ['Comments'],
+            summary: 'Delete a comment',
+            security: [{ bearerAuth: [] }],
+            parameters: [{
+                    name: 'id',
+                    in: 'path',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+            responses: {
+                200: { description: 'Comment deleted successfully' },
+                401: { description: 'Unauthorized' },
+                403: { description: 'Forbidden - Not the comment creator' },
+                404: { description: 'Comment not found' }
+            }
+        }
+    }
+};
+// Add manual paths to the options definition
+const completeOptions = {
+    definition: {
+        openapi: '3.0.0',
+        info: options.definition.info,
+        servers: options.definition.servers,
+        components: options.definition.components,
+        tags: options.definition.tags,
+        paths: manualPaths
+    },
+    apis: [] // No need for file parsing since we have manual paths
+};
+const swaggerSpec = (0, swagger_jsdoc_1.default)(completeOptions);
 exports.swaggerSpec = swaggerSpec;
 //# sourceMappingURL=swagger.js.map

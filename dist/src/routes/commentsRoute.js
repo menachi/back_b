@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const commentsController_1 = __importDefault(require("../controllers/commentsController"));
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = express_1.default.Router();
 /**
  * @swagger
@@ -75,8 +76,22 @@ router.get("/", commentsController_1.default.getAll.bind(commentsController_1.de
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *             example:
- *               message: "Comment not found"
- *       400:
+ *               message: "Comment not found" *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
+ *       403:
+ *         description: Forbidden - Not the comment creator
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "You can only update comments you created" *       400:
  *         description: Invalid comment ID format
  *         content:
  *           application/json:
@@ -92,7 +107,9 @@ router.get("/:id", commentsController_1.default.getById.bind(commentsController_
  *   post:
  *     tags: [Comments]
  *     summary: Create a new comment
- *     description: Create a new comment on a movie
+ *     description: Create a new comment on a movie (requires authentication)
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -111,10 +128,6 @@ router.get("/:id", commentsController_1.default.getById.bind(commentsController_
  *                 type: string
  *                 description: ID of the movie being commented on
  *                 example: "507f1f77bcf86cd799439011"
- *               userId:
- *                 type: string
- *                 description: ID of the user writing the comment
- *                 example: "507f1f77bcf86cd799439012"
  *     responses:
  *       201:
  *         description: Comment created successfully
@@ -130,6 +143,14 @@ router.get("/:id", commentsController_1.default.getById.bind(commentsController_
  *               $ref: '#/components/schemas/Error'
  *             example:
  *               message: "Content and movieId are required"
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
  *       404:
  *         description: Referenced movie not found
  *         content:
@@ -139,14 +160,16 @@ router.get("/:id", commentsController_1.default.getById.bind(commentsController_
  *             example:
  *               message: "Movie not found"
  */
-router.post("/", commentsController_1.default.create.bind(commentsController_1.default));
+router.post("/", authMiddleware_1.authenticate, commentsController_1.default.create.bind(commentsController_1.default));
 /**
  * @swagger
  * /comment/{id}:
  *   delete:
  *     tags: [Comments]
  *     summary: Delete a comment
- *     description: Delete a comment by ID
+ *     description: Delete a comment by ID (requires authentication and ownership)
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -183,14 +206,16 @@ router.post("/", commentsController_1.default.create.bind(commentsController_1.d
  *             example:
  *               message: "Invalid comment ID"
  */
-router.delete("/:id", commentsController_1.default.del.bind(commentsController_1.default));
+router.delete("/:id", authMiddleware_1.authenticate, commentsController_1.default.del.bind(commentsController_1.default));
 /**
  * @swagger
  * /comment/{id}:
  *   put:
  *     tags: [Comments]
  *     summary: Update a comment
- *     description: Update a comment by ID
+ *     description: Update a comment by ID (requires authentication and ownership)
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -214,10 +239,6 @@ router.delete("/:id", commentsController_1.default.del.bind(commentsController_1
  *                 type: string
  *                 description: ID of the movie being commented on
  *                 example: "507f1f77bcf86cd799439011"
- *               userId:
- *                 type: string
- *                 description: ID of the user who wrote the comment
- *                 example: "507f1f77bcf86cd799439012"
  *     responses:
  *       200:
  *         description: Comment updated successfully
@@ -233,6 +254,22 @@ router.delete("/:id", commentsController_1.default.del.bind(commentsController_1
  *               $ref: '#/components/schemas/Error'
  *             example:
  *               message: "Comment not found"
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
+ *       403:
+ *         description: Forbidden - Not the comment creator
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "You can only update comments you created"
  *       400:
  *         description: Invalid input data or comment ID
  *         content:
@@ -242,6 +279,6 @@ router.delete("/:id", commentsController_1.default.del.bind(commentsController_1
  *             example:
  *               message: "Invalid comment ID or data"
  */
-router.put("/:id", commentsController_1.default.update.bind(commentsController_1.default));
+router.put("/:id", authMiddleware_1.authenticate, commentsController_1.default.update.bind(commentsController_1.default));
 exports.default = router;
 //# sourceMappingURL=commentsRoute.js.map

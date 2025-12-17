@@ -1,5 +1,6 @@
 import express from "express";
 import commentsController from "../controllers/commentsController";
+import { authenticate } from "../middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -73,8 +74,22 @@ router.get("/", commentsController.getAll.bind(commentsController));
  *             schema:
  *               $ref: '#/components/schemas/Error'
  *             example:
- *               message: "Comment not found"
- *       400:
+ *               message: "Comment not found" *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
+ *       403:
+ *         description: Forbidden - Not the comment creator
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "You can only update comments you created" *       400:
  *         description: Invalid comment ID format
  *         content:
  *           application/json:
@@ -91,7 +106,9 @@ router.get("/:id", commentsController.getById.bind(commentsController));
  *   post:
  *     tags: [Comments]
  *     summary: Create a new comment
- *     description: Create a new comment on a movie
+ *     description: Create a new comment on a movie (requires authentication)
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -110,10 +127,6 @@ router.get("/:id", commentsController.getById.bind(commentsController));
  *                 type: string
  *                 description: ID of the movie being commented on
  *                 example: "507f1f77bcf86cd799439011"
- *               userId:
- *                 type: string
- *                 description: ID of the user writing the comment
- *                 example: "507f1f77bcf86cd799439012"
  *     responses:
  *       201:
  *         description: Comment created successfully
@@ -129,6 +142,14 @@ router.get("/:id", commentsController.getById.bind(commentsController));
  *               $ref: '#/components/schemas/Error'
  *             example:
  *               message: "Content and movieId are required"
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
  *       404:
  *         description: Referenced movie not found
  *         content:
@@ -138,7 +159,7 @@ router.get("/:id", commentsController.getById.bind(commentsController));
  *             example:
  *               message: "Movie not found"
  */
-router.post("/", commentsController.create.bind(commentsController));
+router.post("/", authenticate, commentsController.create.bind(commentsController));
 
 /**
  * @swagger
@@ -146,7 +167,9 @@ router.post("/", commentsController.create.bind(commentsController));
  *   delete:
  *     tags: [Comments]
  *     summary: Delete a comment
- *     description: Delete a comment by ID
+ *     description: Delete a comment by ID (requires authentication and ownership)
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -183,7 +206,7 @@ router.post("/", commentsController.create.bind(commentsController));
  *             example:
  *               message: "Invalid comment ID"
  */
-router.delete("/:id", commentsController.del.bind(commentsController));
+router.delete("/:id", authenticate, commentsController.del.bind(commentsController));
 
 /**
  * @swagger
@@ -191,7 +214,9 @@ router.delete("/:id", commentsController.del.bind(commentsController));
  *   put:
  *     tags: [Comments]
  *     summary: Update a comment
- *     description: Update a comment by ID
+ *     description: Update a comment by ID (requires authentication and ownership)
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -215,10 +240,6 @@ router.delete("/:id", commentsController.del.bind(commentsController));
  *                 type: string
  *                 description: ID of the movie being commented on
  *                 example: "507f1f77bcf86cd799439011"
- *               userId:
- *                 type: string
- *                 description: ID of the user who wrote the comment
- *                 example: "507f1f77bcf86cd799439012"
  *     responses:
  *       200:
  *         description: Comment updated successfully
@@ -234,6 +255,22 @@ router.delete("/:id", commentsController.del.bind(commentsController));
  *               $ref: '#/components/schemas/Error'
  *             example:
  *               message: "Comment not found"
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "Access token required"
+ *       403:
+ *         description: Forbidden - Not the comment creator
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *             example:
+ *               message: "You can only update comments you created"
  *       400:
  *         description: Invalid input data or comment ID
  *         content:
@@ -243,6 +280,6 @@ router.delete("/:id", commentsController.del.bind(commentsController));
  *             example:
  *               message: "Invalid comment ID or data"
  */
-router.put("/:id", commentsController.update.bind(commentsController));
+router.put("/:id", authenticate, commentsController.update.bind(commentsController));
 
 export default router;
