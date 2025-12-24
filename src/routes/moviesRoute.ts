@@ -40,6 +40,50 @@ router.get("/", moviesController.getAll.bind(moviesController));
 
 /**
  * @swagger
+ * /movie/search:
+ *   post:
+ *     tags: [Movies]
+ *     summary: Search movies with free text
+ *     description: Search movies using natural language query
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - query
+ *             properties:
+ *               query:
+ *                 type: string
+ *                 description: Free text search query
+ *                 example: "sci-fi movies from 2010s"
+ *     responses:
+ *       200:
+ *         description: Search results
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 query:
+ *                   type: string
+ *                   description: The original search query
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Movie'
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ */
+router.post("/search", authenticate, moviesController.searchMovies.bind(moviesController));
+
+/**
+ * @swagger
  * /movie/{id}:
  *   get:
  *     tags: [Movies]
