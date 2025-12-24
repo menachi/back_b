@@ -23,8 +23,9 @@ const generateToken = (userId: string): GeneratedTokens => {
     );
 
     const refreshExpiresIn = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN || "1440");
+    const rand = Math.floor(Math.random() * 1000);
     const refreshToken = jwt.sign(
-        { _id: userId },
+        { _id: userId, rand: rand },
         secret,
         { expiresIn: refreshExpiresIn }
     );

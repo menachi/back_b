@@ -24,7 +24,8 @@ const generateToken = (userId) => {
     const expiresIn = parseInt(process.env.JWT_EXPIRES_IN || "3600");
     const token = jsonwebtoken_1.default.sign({ _id: userId }, secret, { expiresIn: expiresIn });
     const refreshExpiresIn = parseInt(process.env.REFRESH_TOKEN_EXPIRES_IN || "1440");
-    const refreshToken = jsonwebtoken_1.default.sign({ _id: userId }, secret, { expiresIn: refreshExpiresIn });
+    const rand = Math.floor(Math.random() * 1000);
+    const refreshToken = jsonwebtoken_1.default.sign({ _id: userId, rand: rand }, secret, { expiresIn: refreshExpiresIn });
     return { token, refreshToken };
 };
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
