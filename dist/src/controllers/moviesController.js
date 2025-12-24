@@ -14,6 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const moviesModel_1 = __importDefault(require("../model/moviesModel"));
 const baseController_1 = __importDefault(require("./baseController"));
+const llmService_1 = __importDefault(require("../services/llmService"));
+const searchService_1 = __importDefault(require("../services/searchService"));
 class MoviesController extends baseController_1.default {
     constructor() {
         super(moviesModel_1.default);
@@ -93,7 +95,7 @@ class MoviesController extends baseController_1.default {
         return __awaiter(this, void 0, void 0, function* () {
             const { query } = req.body;
             // Validate request body
-            if (!query) {
+            if (query === undefined || query === null) {
                 return res.status(400).json({ message: "query field is required" });
             }
             if (typeof query !== 'string') {
@@ -103,9 +105,18 @@ class MoviesController extends baseController_1.default {
                 return res.status(400).json({ message: "query cannot be empty" });
             }
             try {
-                // TODO: Implement actual search logic
-                // For now, return empty results to make tests pass
-                const results = [];
+                // Parse the query using LLM service
+                const parsedQuery = yield llmService_1.default.parseSearchQuery(query);
+                // Search movies using the parsed query
+                let results = [];
+                try {
+                    results = yield searchService_1.default.searchMovies(parsedQuery);
+                }
+                catch (searchError) {
+                    console.warn('Advanced search failed, falling back to simple search:', searchError);
+                    // Fallback to simple text search
+                    results = yield searchService_1.default.simpleTextSearch(query.trim());
+                }
                 res.status(200).json({
                     query: query,
                     results: results

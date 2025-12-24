@@ -2,6 +2,8 @@ import movieModel from "../model/moviesModel";
 import { Request, Response } from "express";
 import baseController from "./baseController";
 import { AuthRequest } from "../middleware/authMiddleware";
+import llmService from "../services/llmService";
+import searchService from "../services/searchService";
 
 class MoviesController extends baseController {
     constructor() {
@@ -67,7 +69,7 @@ class MoviesController extends baseController {
         const { query } = req.body;
 
         // Validate request body
-        if (!query) {
+        if (query === undefined || query === null) {
             return res.status(400).json({ message: "query field is required" });
         }
 
@@ -80,9 +82,19 @@ class MoviesController extends baseController {
         }
 
         try {
-            // TODO: Implement actual search logic
-            // For now, return empty results to make tests pass
-            const results: any[] = [];
+            // Parse the query using LLM service
+            const parsedQuery = await llmService.parseSearchQuery(query);
+
+            // Search movies using the parsed query
+            let results: any[] = [];
+
+            try {
+                results = await searchService.searchMovies(parsedQuery);
+            } catch (searchError) {
+                console.warn('Advanced search failed, falling back to simple search:', searchError);
+                // Fallback to simple text search
+                results = await searchService.simpleTextSearch(query.trim());
+            }
 
             res.status(200).json({
                 query: query,
