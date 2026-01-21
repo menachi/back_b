@@ -4,7 +4,7 @@ import moviesRoute from "./routes/moviesRoute";
 import commentsRoute from "./routes/commentsRoute";
 import authRoute from "./routes/authRoute";
 import { swaggerUi, swaggerSpec } from "./swagger";
-
+import multerRoute from "./routes/multerRoute";
 import dotenv from "dotenv";
 dotenv.config({ path: ".env.dev" });
 
@@ -18,10 +18,18 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'Movies & Comments API Documentation'
 }));
 
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
+  res.setHeader("Access-Control-Allow-Methods", "*");
+  next();
+});
 // API routes
 app.use("/movie", moviesRoute);
 app.use("/comment", commentsRoute);
 app.use("/auth", authRoute);
+app.use('/uploads', express.static('public/uploads'));
+app.use("/upload", multerRoute);
 
 // Swagger JSON endpoint
 app.get('/api-docs.json', (req, res) => {
